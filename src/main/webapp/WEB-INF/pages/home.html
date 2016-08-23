@@ -64,9 +64,16 @@
                     <div class="col-md-8 col-md-offset-2">
                         <h1 class="brand-heading">KLM</h1>
                         <p class="intro-text">Where do you want to go?</p>
+						
+						<div class="sandbox">
+						<label for="from">From</label>
+						<select id="from"  placeholder="Find a movie..."></select>
+					</div>
+						
+						
 						<div class="form-inline">
 							<div class="form-group">
-								<input type="text" class="form-control" placeholder="From" id="from">
+								<input type="text" class="form-control" placeholder="From" id="srom">
 							</div>
 							<input type="text" class="form-control" placeholder="To" id="to">
 						</div>
@@ -86,6 +93,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.3/jquery.easing.min.js"></script>
 	
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.full.min.js"></script>
+	<script src="http://selectize.github.io/selectize.js/js/selectize.js"></script>
 	<script th:href="@{/js/main.js}"></script>
 
 
