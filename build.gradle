@@ -36,6 +36,7 @@ dependencies {
     compile group: 'javax.servlet', name: 'jstl', version: '1.2'
 	compile group: 'org.thymeleaf', name: 'thymeleaf', version: '3.0.0.RELEASE'
 	compile group: 'org.thymeleaf', name: 'thymeleaf-spring4', version: '3.0.1.RELEASE'
+	compile group: 'org.unbescape', name: 'unbescape', version: '1.0'
     compile("org.springframework.boot:spring-boot-starter-jetty")
     compile("org.springframework.boot:spring-boot-starter-actuator")
     compile("org.springframework.boot:spring-boot-starter-security")

@@ -17,6 +17,7 @@ public class ResourceServerConfiguration extends ResourceServerConfigurerAdapter
     @Override
     public void configure(HttpSecurity http) throws Exception {
     	http.authorizeRequests().antMatchers("/home/**").permitAll().anyRequest().permitAll();
+    	http.authorizeRequests().antMatchers("/resources/**").permitAll().anyRequest().permitAll();
         http.requestMatcher(new AntPathRequestMatcher("/**"))
                 .authorizeRequests()
                 .anyRequest().access("#oauth2.hasScope('read')");
@@ -26,5 +27,7 @@ public class ResourceServerConfiguration extends ResourceServerConfigurerAdapter
     public void configure(ResourceServerSecurityConfigurer resources) throws Exception {
         resources.resourceId("locations-api");
     }
+    
+    
     
 }
