@@ -6,15 +6,29 @@ $(document)
 					var credentials = btoa(cat);
 					var token = null;
 					var awaiting = false;
-					getToken();
 
-					$('.from').keyup(function() {
+					var getByTerm = function(term) {
 						if (awaiting)
 							return;
-						
-						console.log("make request to api and parse json")
-						
-					});
+						awaiting = true;
+
+						$.ajax({
+							url : "http://localhost:8080/airports?term=" + term,
+
+							success : function(data, status) {
+
+								return console.log("The returned data", data);
+							},
+
+							complete : function(data) {
+								awaiting = false;
+							},
+							beforeSend : function(xhr, settings) {
+								xhr.setRequestHeader('Authorization', 'Bearer '
+										+ token);
+							}
+						});
+					}
 
 					var getToken = function() {
 
@@ -37,5 +51,14 @@ $(document)
 									}
 								});
 					}
+
+					$('#from').keyup(function() {
+						getByTerm($(this).val())
+
+						console.log("make request to api and parse json")
+
+					});
+
+					getToken();
 
 				})
