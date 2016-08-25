@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -55,9 +56,7 @@ public class TicketController {
 	private Optional<Location> showAux(String lang, String key) {
 		try {
 			Thread.sleep(ThreadLocalRandom.current().nextLong(200, 800));
-			//Thread.sleep(8000);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return repository.get(Locale.forLanguageTag(lang), key);
@@ -71,21 +70,14 @@ public class TicketController {
 			@RequestParam(value = "lang", defaultValue = "en") String lang)
 			throws Exception {
 
-		
 		Callable<Stream<Future<Optional<Location>>>> task = () -> {
-		    try {
-		        return this.getDetails(lang,
-						origin, destination);
-		    }
-		    catch (InterruptedException e) {
-		        throw new IllegalStateException("task interrupted", e);
-		    }
+			return this.getDetails(lang, origin, destination);
 		};
-		
-		ExecutorService executor = Executors.newFixedThreadPool(1);
-		Future<Stream<Future<Optional<Location>>>> future = executor.submit(task);
 
-		
+		ExecutorService executor = Executors.newFixedThreadPool(1);
+		Future<Stream<Future<Optional<Location>>>> future = executor
+				.submit(task);
+
 		return () -> {
 			Thread.sleep(ThreadLocalRandom.current().nextLong(1000, 6000));
 			final Location o = repository.get(ENGLISH, origin).orElseThrow(
@@ -95,32 +87,50 @@ public class TicketController {
 			final BigDecimal fare = new BigDecimal(ThreadLocalRandom.current()
 					.nextDouble(100, 3500)).setScale(2, HALF_UP);
 
-			Stream<Future<Optional<Location>>> a = future.get();
 			
-			String[] descriptions = a.map(futurea -> {
-				try {
-					return futurea.get().get().getDescription();
-				} catch (Exception e) {
-					throw new IllegalStateException(e);
-				}
-			}).toArray(size -> new String[size]);
-			;
-
+			String[] descriptions = this.getDescriptions(future);
 			return new FareDescriptor(new Fare(fare.doubleValue(),
 					Currency.valueOf(currency.toUpperCase()), o.getCode(),
 					d.getCode()), descriptions[0], descriptions[1]);
 		};
 	}
 
+	private String[] getDescriptions(
+			Future<Stream<Future<Optional<Location>>>> loc) {
+		String[] descriptions = new String[2];
+		String err = "Could not find the description for the location";
+		try {
+			descriptions = loc.get().map(future -> {
+				try {
+					return future.get().get().getDescription();
+				} catch (Exception e) {
+					return err;
+				}
+			}).toArray(size -> new String[size]);
+		} catch (InterruptedException | ExecutionException e) {
+			descriptions[0] = err;
+			descriptions[1] = err;
+		}
+		return descriptions;
+
+	}
+
 	private Stream<Future<Optional<Location>>> getDetails(String lang,
-			String origin, String destination) throws Exception {
+			String origin, String destination) {
 		ExecutorService executor = Executors.newWorkStealingPool();
 
 		List<Callable<Optional<Location>>> callables = Arrays.asList(
 				() -> this.showAux(lang, origin),
 				() -> this.showAux(lang, destination));
 
-		return executor.invokeAll(callables).stream();
+		Stream<Future<Optional<Location>>> location = null;
+
+		try {
+			location = executor.invokeAll(callables).stream();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		return location;
 
 	}
 
