@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -53,8 +54,8 @@ public class TicketController {
 
 	private Optional<Location> showAux(String lang, String key) {
 		try {
-			//Thread.sleep(ThreadLocalRandom.current().nextLong(200, 800));
-			Thread.sleep(8000);
+			Thread.sleep(ThreadLocalRandom.current().nextLong(200, 800));
+			//Thread.sleep(8000);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -67,10 +68,24 @@ public class TicketController {
 			@PathVariable("origin") String origin,
 			@PathVariable("destination") String destination,
 			@RequestParam(value = "currency", defaultValue = "EUR") String currency,
-			@RequestParam(value = "lang", defaultValue = "en") String lang) throws Exception {
+			@RequestParam(value = "lang", defaultValue = "en") String lang)
+			throws Exception {
 
-		Stream<String> a = this.getDetails(lang, origin, destination);
-		String[] descriptions = a.toArray(size -> new String[size]);
+		
+		Callable<Stream<Future<Optional<Location>>>> task = () -> {
+		    try {
+		        return this.getDetails(lang,
+						origin, destination);
+		    }
+		    catch (InterruptedException e) {
+		        throw new IllegalStateException("task interrupted", e);
+		    }
+		};
+		
+		ExecutorService executor = Executors.newFixedThreadPool(1);
+		Future<Stream<Future<Optional<Location>>>> future = executor.submit(task);
+
+		
 		return () -> {
 			Thread.sleep(ThreadLocalRandom.current().nextLong(1000, 6000));
 			final Location o = repository.get(ENGLISH, origin).orElseThrow(
@@ -79,32 +94,33 @@ public class TicketController {
 					.orElseThrow(IllegalArgumentException::new);
 			final BigDecimal fare = new BigDecimal(ThreadLocalRandom.current()
 					.nextDouble(100, 3500)).setScale(2, HALF_UP);
-			return new FareDescriptor(new Fare(fare.doubleValue(), Currency.valueOf(currency
-					.toUpperCase()), o.getCode(), d.getCode()), descriptions[0], descriptions[1]);
+
+			Stream<Future<Optional<Location>>> a = future.get();
+			
+			String[] descriptions = a.map(futurea -> {
+				try {
+					return futurea.get().get().getDescription();
+				} catch (Exception e) {
+					throw new IllegalStateException(e);
+				}
+			}).toArray(size -> new String[size]);
+			;
+
+			return new FareDescriptor(new Fare(fare.doubleValue(),
+					Currency.valueOf(currency.toUpperCase()), o.getCode(),
+					d.getCode()), descriptions[0], descriptions[1]);
 		};
 	}
 
-	private Stream<String> getDetails(String lang, String origin,
-			String destination) throws Exception {
+	private Stream<Future<Optional<Location>>> getDetails(String lang,
+			String origin, String destination) throws Exception {
 		ExecutorService executor = Executors.newWorkStealingPool();
 
 		List<Callable<Optional<Location>>> callables = Arrays.asList(
 				() -> this.showAux(lang, origin),
 				() -> this.showAux(lang, destination));
 
-		return executor
-				.invokeAll(callables)
-				.stream()
-				.map(future -> {
-					try {
-						return future
-								.get()
-								.get()
-								.getDescription();
-					} catch (Exception e) {
-						throw new IllegalStateException(e);
-					}
-				});
+		return executor.invokeAll(callables).stream();
 
 	}
 

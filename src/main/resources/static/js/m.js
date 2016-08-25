@@ -16,7 +16,7 @@ $(document)
 							success : function(data, status) {
 								console.log(data.description)
 								var symbol = data.fare.currency == "EUR" ? "€" : "£";
-								$('#result').html("The price is " + data.fare.amount + " " + symbol + "<br>" + "You will fly from " + data.descriptionOrigion + " to " + data.descriptionDestination);
+								$('#result').html("The price is " + data.fare.amount + " " + symbol + "<br>" + "You will fly from: <br> " + data.descriptionOrigion + "<br> to <br>" + data.descriptionDestination);
 							},
 
 							complete : function(data) {
