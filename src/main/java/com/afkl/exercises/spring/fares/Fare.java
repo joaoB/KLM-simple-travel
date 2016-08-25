@@ -8,5 +8,4 @@ public class Fare {
     double amount;
     Currency currency;
     String origin, destination;
-
 }

@@ -29,18 +29,6 @@ public class FareController {
         this.repository = repository;
     }
 
-    @RequestMapping(method = GET)
-    public Callable<Fare> calculateFare(@PathVariable("origin") String origin,
-                                        @PathVariable("destination") String destination,
-                                        @RequestParam(value = "currency", defaultValue = "EUR") String currency) {
-        return () -> {
-            Thread.sleep(ThreadLocalRandom.current().nextLong(1000, 6000));
-            final Location o = repository.get(ENGLISH, origin).orElseThrow(IllegalArgumentException::new);
-            final Location d = repository.get(ENGLISH, destination).orElseThrow(IllegalArgumentException::new);
-            final BigDecimal fare = new BigDecimal(ThreadLocalRandom.current().nextDouble(100, 3500))
-                    .setScale(2, HALF_UP);
-            return new Fare(fare.doubleValue(), Currency.valueOf(currency.toUpperCase()), o.getCode(), d.getCode());
-        };
-    }
-
+  
+    
 }
